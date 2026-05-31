@@ -1,7 +1,13 @@
 import subprocess
 import json
 import os
+import re
 from pathlib import Path
+
+try:
+    import winreg
+except ImportError:
+    winreg = None
 
 
 def _run(cmd: list[str], timeout: int = 30, use_powershell: bool = False) -> str:
@@ -123,6 +129,92 @@ def query_uv_tool() -> list[str]:
     return names
 
 
+def _normalize_windows_path(raw: str) -> Path:
+    return Path(raw.replace("\\\\", "\\").replace("/", "\\"))
+
+
+def _steam_roots_from_registry() -> list[Path]:
+    if winreg is None:
+        return []
+
+    roots = []
+    reg_queries = [
+        (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam", "SteamPath"),
+        (winreg.HKEY_CURRENT_USER, r"Software\Valve\Steam", "SteamExe"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam", "InstallPath"),
+        (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Valve\Steam", "InstallPath"),
+    ]
+
+    for hive, subkey, value_name in reg_queries:
+        try:
+            with winreg.OpenKey(hive, subkey) as key:
+                value, _ = winreg.QueryValueEx(key, value_name)
+        except OSError:
+            continue
+
+        path = _normalize_windows_path(str(value))
+        if value_name.lower().endswith("exe"):
+            path = path.parent
+        if path.is_dir():
+            roots.append(path)
+
+    unique = []
+    seen = set()
+    for root in roots:
+        key = str(root).lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(root)
+    return unique
+
+
+def discover_steam_libraries(config: dict) -> list[Path]:
+    configured = [_normalize_windows_path(p) for p in config.get("steam_roots", []) if p]
+    roots = configured + _steam_roots_from_registry()
+
+    libraries = []
+    seen = set()
+
+    for raw_root in roots:
+        root = raw_root.parent if raw_root.name.lower() == "steamapps" else raw_root
+        candidates = [root]
+
+        libraryfolders = root / "steamapps" / "libraryfolders.vdf"
+        if libraryfolders.is_file():
+            text = libraryfolders.read_text(encoding="utf-8", errors="replace")
+            path_values = re.findall(r'"path"\s*"([^"]+)"', text, flags=re.IGNORECASE)
+            if not path_values:
+                path_values = [value for _key, value in re.findall(r'"(\d+)"\s*"([^"]+)"', text)]
+            candidates.extend(_normalize_windows_path(value) for value in path_values)
+
+        for candidate in candidates:
+            if (candidate / "steamapps").is_dir():
+                key = str(candidate).lower()
+                if key not in seen:
+                    seen.add(key)
+                    libraries.append(candidate)
+
+    return libraries
+
+
+def scan_steam_index(config: dict) -> tuple[list[str], list[str]]:
+    libraries = discover_steam_libraries(config)
+    names = []
+
+    for library in libraries:
+        for manifest in (library / "steamapps").glob("appmanifest_*.acf"):
+            text = manifest.read_text(encoding="utf-8", errors="replace")
+            match = re.search(r'"name"\s*"([^"]+)"', text, flags=re.IGNORECASE)
+            if not match:
+                match = re.search(r'"installdir"\s*"([^"]+)"', text, flags=re.IGNORECASE)
+            if match:
+                name = match.group(1).strip()
+                if name:
+                    names.append(name)
+
+    return sorted(set(names)), [str(path) for path in libraries]
+
+
 def query_all(config: dict) -> dict[str, list[str]]:
     results = {}
     pm_map = {
@@ -166,4 +258,15 @@ def format_manual_index_txt(names: list[str], timestamp: str, sources: list[str]
     ]
     for n in names:
         lines.append(n)
+    return "\n".join(lines) + "\n"
+
+
+def format_steam_index_txt(names: list[str], timestamp: str, libraries: list[str]) -> str:
+    lines = [
+        f"# Steam index — scanned {timestamp}",
+        f"# Libraries: {', '.join(libraries) if libraries else '(none detected)'}",
+        "# Installed Steam game names used as reference only",
+    ]
+    for name in names:
+        lines.append(name)
     return "\n".join(lines) + "\n"

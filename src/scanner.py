@@ -193,8 +193,15 @@ def generate_diff(old_dir: Path, new_dir: Path) -> str:
 
 
 def run_full_scan(config: dict):
-    """Run a full scan: all configured dirs + packages + manual index + diff."""
-    from .packages import query_all, scan_manual_index, format_packages_txt, format_manual_index_txt
+    """Run a full scan: all configured dirs + packages + manual index + steam index + diff."""
+    from .packages import (
+        query_all,
+        scan_manual_index,
+        scan_steam_index,
+        format_packages_txt,
+        format_manual_index_txt,
+        format_steam_index_txt,
+    )
 
     sd = scan_dir()
     pd = partial_dir()
@@ -227,6 +234,13 @@ def run_full_scan(config: dict):
     manual_names = scan_manual_index(config)
     (sd / "manual-index.txt").write_text(
         format_manual_index_txt(manual_names, ts, config.get("manual_dirs", [])),
+        encoding="utf-8",
+    )
+
+    # Steam index
+    steam_names, steam_libraries = scan_steam_index(config)
+    (sd / "steam-index.txt").write_text(
+        format_steam_index_txt(steam_names, ts, steam_libraries),
         encoding="utf-8",
     )
 
@@ -273,6 +287,13 @@ def run_partial_scan(key: str, config: dict):
             format_manual_index_txt(manual_names, ts, config.get("manual_dirs", [])),
             encoding="utf-8",
         )
+    elif key == "steam-index":
+        from .packages import scan_steam_index, format_steam_index_txt
+        steam_names, steam_libraries = scan_steam_index(config)
+        (sd / "steam-index.txt").write_text(
+            format_steam_index_txt(steam_names, ts, steam_libraries),
+            encoding="utf-8",
+        )
     elif key in scan_dirs:
         rel_path = scan_dirs[key]
         depth = scan_depths.get(key, scan_depths.get("default", 1))
@@ -285,5 +306,5 @@ def run_partial_scan(key: str, config: dict):
         )
     else:
         print(f"Unknown scan key: {key}")
-        print(f"Available: {', '.join(scan_dirs.keys())}, packages, manual-index")
+        print(f"Available: {', '.join(scan_dirs.keys())}, packages, manual-index, steam-index")
         return

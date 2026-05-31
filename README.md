@@ -42,6 +42,9 @@ The reset script removes generated scan/report artifacts and restores `facts.md`
 - `skill-sources/cleaner/`: Cleaner 专用 skills 的跟踪源文件  
   Tracked source copies of Cleaner-specific skills
 
+当前还支持一个 Steam 游戏参考索引，会读取 Steam 库配置与已安装游戏清单。  
+The project also supports a Steam game reference index by reading Steam library configuration and installed game manifests.
+
 ## Skills
 
 Cleaner 专用 skills 的源文件集中在 `skill-sources/cleaner/`。  

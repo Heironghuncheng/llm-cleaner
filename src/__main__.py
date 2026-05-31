@@ -4,7 +4,7 @@ from pathlib import Path
 
 from .config import load_config, scan_dir, partial_dir
 from .scanner import run_full_scan, run_partial_scan, deep_scan, _key_to_filename
-from .packages import query_all, scan_manual_index
+from .packages import query_all, scan_manual_index, scan_steam_index
 from .matcher import match_entry
 from .cleaner import remove_entry
 
@@ -50,6 +50,7 @@ def _get_scan_file_mapping(config: dict) -> dict[str, str]:
         mapping[key] = _key_to_filename(key)
     mapping["packages"] = "packages.txt"
     mapping["manual-index"] = "manual-index.txt"
+    mapping["steam-index"] = "steam-index.txt"
     return mapping
 
 
@@ -136,7 +137,7 @@ def _display_single_match(console, name, result):
     table.add_column("Match", style="green")
     table.add_column("Score", justify="right")
 
-    for label, key in [("packages", "packages"), ("manual", "manual"), ("home", "home"), ("appdata", "appdata")]:
+    for label, key in [("packages", "packages"), ("manual", "manual"), ("steam", "steam"), ("home", "home"), ("appdata", "appdata")]:
         matches = result[key]
         if matches:
             for m, score in matches[:3]:
@@ -162,7 +163,7 @@ def _display_batch_match(console, results: list[dict]):
         name = _safe(r["query"])
         verdict = _safe(r["verdict"])
         best = ("", "", 0)
-        for label in ("packages", "manual"):
+        for label in ("packages", "manual", "steam"):
             if r[label] and r[label][0][1] > best[2]:
                 best = (label, r[label][0][0], r[label][0][1])
         if best[2] == 0:
@@ -189,10 +190,11 @@ def cmd_match(name):
             return
         packages = query_all(config)
         manual = scan_manual_index(config)
+        steam, _libraries = scan_steam_index(config)
         scan_names = _load_scan_names()
         results = []
         for item_name, _line in items:
-            r = match_entry(item_name, packages, manual, scan_names["home"], scan_names["appdata"])
+            r = match_entry(item_name, packages, manual, steam, scan_names["home"], scan_names["appdata"])
             results.append(r)
         _display_batch_match(console, results)
         return
@@ -200,9 +202,10 @@ def cmd_match(name):
     # Single-item mode (original behavior)
     packages = query_all(config)
     manual = scan_manual_index(config)
+    steam, _libraries = scan_steam_index(config)
     scan_names = _load_scan_names()
 
-    result = match_entry(name, packages, manual, scan_names["home"], scan_names["appdata"])
+    result = match_entry(name, packages, manual, steam, scan_names["home"], scan_names["appdata"])
     _display_single_match(console, name, result)
 
 
@@ -291,7 +294,13 @@ def cmd_verify(report_path):
     in_classification = False
 
     for line in report_text.splitlines():
-        if line.startswith("## delete") or line.startswith("## keep") or line.startswith("## unknown") or line.startswith("## remind"):
+        if (
+            line.startswith("## delete")
+            or line.startswith("## recommend-delete")
+            or line.startswith("## keep")
+            or line.startswith("## unknown")
+            or line.startswith("## remind")
+        ):
             in_classification = True
         elif line.startswith("## "):
             in_classification = False
@@ -317,9 +326,17 @@ def cmd_verify(report_path):
         print("Diff has no meaningful items. Nothing to verify.")
         return
     # Reference-only keys — not audited
-    _REF_KEYS = {"packages", "manual-index"}
-    target_items = diff_items if is_diff else {k: list(v) for k, v in scan_items.items() if not k.endswith(":hash") and k not in _REF_KEYS}
-    target_counts = diff_counts if is_diff else {k: v for k, v in scan_counts.items() if not k.endswith(":hash") and k not in _REF_KEYS}
+    _REF_KEYS = {"packages", "manual-index", "steam-index"}
+    target_items = (
+        {k: v for k, v in diff_items.items() if k not in _REF_KEYS}
+        if is_diff
+        else {k: list(v) for k, v in scan_items.items() if not k.endswith(":hash") and k not in _REF_KEYS}
+    )
+    target_counts = (
+        {k: v for k, v in diff_counts.items() if k not in _REF_KEYS}
+        if is_diff
+        else {k: v for k, v in scan_counts.items() if not k.endswith(":hash") and k not in _REF_KEYS}
+    )
 
     # Check per directory
     from collections import Counter
@@ -389,7 +406,7 @@ def main():
         keys = list(config.get("scan_dirs", {}).keys())
         print("Usage: uv run python -m src <command> [args]")
         print("Commands: scan, deep, match, verify, remove, report")
-        print(f"\nScan keys: {', '.join(keys)}, packages, manual-index")
+        print(f"\nScan keys: {', '.join(keys)}, packages, manual-index, steam-index")
         sys.exit(1)
 
     cmd = args[0]

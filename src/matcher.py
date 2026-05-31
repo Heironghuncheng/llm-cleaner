@@ -36,13 +36,14 @@ def fuzzy_match(query: str, candidates: list[str], threshold: int = 70) -> list[
     return sorted(matches, key=lambda x: -x[1])
 
 
-def match_entry(name: str, packages: dict[str, list[str]], manual_index: list[str],
-                home: list[str], appdata_entries: list[str]) -> dict:
+def match_entry(name: str, packages: dict[str, list[str]], manual_index: list[str], steam_index: list[str],
+                 home: list[str], appdata_entries: list[str]) -> dict:
     """Match a name against all known sources. Returns match result dict."""
     result = {
         "query": name,
         "packages": [],
         "manual": [],
+        "steam": [],
         "home": [],
         "appdata": [],
         "verdict": "unknown",
@@ -65,6 +66,7 @@ def match_entry(name: str, packages: dict[str, list[str]], manual_index: list[st
     result["packages"] = pkg_matches
 
     result["manual"] = fuzzy_match(name, manual_index)
+    result["steam"] = fuzzy_match(name, steam_index)
     result["home"] = fuzzy_match(name, home)
     result["appdata"] = fuzzy_match(name, appdata_entries)
 
@@ -75,6 +77,7 @@ def match_entry(name: str, packages: dict[str, list[str]], manual_index: list[st
     # Determine verdict
     has_pkg = result["packages"] and result["packages"][0][1] >= 80
     has_man = result["manual"] and result["manual"][0][1] >= 80
+    has_steam = result["steam"] and result["steam"][0][1] >= 80
     has_home = result["home"] and result["home"][0][1] >= 80
     has_app = result["appdata"] and result["appdata"][0][1] >= 80
 
@@ -82,6 +85,8 @@ def match_entry(name: str, packages: dict[str, list[str]], manual_index: list[st
         result["verdict"] = "active (package manager)"
     elif has_man:
         result["verdict"] = "active (manual install)"
+    elif has_steam:
+        result["verdict"] = "active (steam library)"
     elif has_home or has_app:
         result["verdict"] = "stale (not in package manager)"
     else:

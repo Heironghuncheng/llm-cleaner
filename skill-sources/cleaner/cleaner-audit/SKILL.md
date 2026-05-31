@@ -16,9 +16,10 @@ Work through this table top-to-bottom for each item. First match wins.
 | 3 | **Empty directory** (no files, no subdirs, or only a `.log` file) | `delete` | `deep` scan shows nothing inside |
 | 4 | **Pure cache / temp** (see list below) | `delete` | Regenerated on next use; no user settings |
 | 5 | Software identified, **confirmed uninstalled** (not in any PM, no recent `.exe`) | `delete` | Source known, software gone; residual config only |
-| 6 | **`*` stale marker** present (all content older than `stale_months`) — rules #1–#5 take precedence | `remind` | Item is old; user should decide whether to keep or delete |
-| 7 | Software identified, **installed and active** (found in PM or manual index, no `*`) | `keep` | Software in active use |
-| 8 | **Cannot identify** which software created this after deep scan + web search, and the item is **not** being handled by the stale `*` rule | `unknown` | Truly untraceable; never `delete` |
+| 6 | Software source is **known**, but it is **not found in any index** (`packages`, `manual-index`, `steam-index`) | `recommend-delete` | Known residual candidate; second review required |
+| 7 | Software source is **known** and the item is stale (`*`) | `remind` | Known software is old; user should decide whether to keep or delete |
+| 8 | Software source is **known**, found in an index, and **not stale** | `keep` | Indexed and not old |
+| 9 | **Cannot establish** which software created this after deep scan + web search | `unknown` | Source or ownership still unclear |
 
 ### Cache / temp list (rule #4)
 
@@ -31,13 +32,14 @@ Always safe to delete — regenerated on next use:
 
 ### Stale marker `*`
 
-`*` means the item's newest content is older than `stale_months`. Default action: `remind` (rule #6).
+`*` means the item's newest content is older than `stale_months`.
 
 - Rules #1–#5 are checked first — a stale system dir is still `keep`, a stale empty dir is still `delete`
-- `*` + confirmed uninstalled → `delete` (rule #5 overrides #6)
-- `*` + installed and active → `remind` (software may be abandoned)
-- `*` + can't determine software → still `remind` (old and unidentified, so flag it for user review instead of guessing)
-- `unknown` is for non-stale items that remain untraceable after investigation
+- `*` + confirmed uninstalled → `delete` (rule #5 overrides later stale rules)
+- known source + not in any index (`packages`, `manual-index`, `steam-index`) → `recommend-delete`
+- known source + stale (`*`) → `remind`
+- known source + found in any index and not stale → `keep`
+- source or ownership still unclear after package-manager, manual-index, steam-index, deep-scan, and web investigation → `unknown`
 - Deep scan may reveal newer nested content → re-evaluate `*` status
 
 ### Evidence format
@@ -50,7 +52,9 @@ Each report row's Evidence must follow one of these patterns:
 | User data | `User project: <description>` | `User project: Python source files` |
 | PM match | `<pm>: <package> [活跃 / active]` | `winget: valve.steam 活跃` |
 | Manual index | `manual: <name> 活跃` | `manual: Battle.net 活跃` |
+| Steam index | `steam: <name> 活跃` | `steam: Total War: WARHAMMER III 活跃` |
 | Stale (`*`) | `Stale since YYYY-MM-DD, <detail>` | `Stale since 2025-08, software still installed` |
+| Recommend delete | `Not in indexes, second review needed` | `Not in indexes, second review needed` |
 | Stale + uninstalled | `Not in PM, stale since YYYY-MM-DD` | `Not in PM, stale since 2025-09-25` |
 | Cache/temp | `Cache, regenerated on use` | `Cache, regenerated on use` |
 | Empty | `Empty directory` | `Empty directory` |
@@ -64,9 +68,11 @@ Each report row's Evidence must follow one of these patterns:
 - You MUST classify every item — no item left unaccounted for.
 - You MUST web search unknown items — try every tool before giving up.
 - You MUST present results bilingually (中/英).
+- You MUST do a second review for `recommend-delete` items before presenting them as deletion candidates. User-defined directory names may not match software names, and some installed software may live outside configured reference dirs.
 - `facts.md` is prompt memory, not ground truth. Use it as a hint when classifying, but still verify against scan output and still account for every item in the report.
 - `facts.md` `no_clean` entries usually classify as `keep` unless the user explicitly overrides them. `stale` entries are investigation/reminder hints, not automatic `delete`.
-- **Recent dates ≠ keep.** A file modified last week is still residual if its software is uninstalled. Always check the PM before deciding. `Recent 260417` with no PM match → `delete` or `remind`, not `keep`.
+- **Recent dates ≠ keep.** A file modified last week is still residual if it is not found in any index. Recent-but-unindexed known items still belong in `recommend-delete`.
+- **Known but unindexed items go to `recommend-delete`.** If you know what created the item, but it is not found in `packages`, `manual-index`, or `steam-index`, put it in `recommend-delete` and second-review it.
 - **User data must be user-created.** Software workspaces (Go, Rust, Node) are NOT user data — they're software artifacts. If the software is gone, the workspace is residual. If the user doesn't recognize the file, it's not user data → `unknown`.
 
 ## When to Use
@@ -113,7 +119,7 @@ Classification scope follows Step 2:
 - **Diff only** → classify only items mentioned in the diff
 
 For each scan file in scope:
-- Read `scan/packages.txt` and `scan/manual-index.txt` as reference — these list all installed software
+- Read `scan/packages.txt`, `scan/manual-index.txt`, and `scan/steam-index.txt` as reference — these are the indexes used to decide `keep`, `remind`, and `recommend-delete`
 - Use `match` to batch-match all items against those references
 - Match verdicts are **hints only**. The LLM makes the final decision.
 
@@ -134,12 +140,12 @@ uv run python -m src match "dirname"
 
 ### Step 4: Investigation
 
-For items not classified as keep/delete in Step 3 (including uncertain match results). For each item: **which software created this? Is it still installed?**
+For items not classified as keep/delete in Step 3 (including uncertain match results). For each item: **which software created this? Is it present in any index?**
 
 1. **Batch deep scan** — pass all unclassified items as a file or list, do NOT deep scan one by one.
    - Look for: identifiable file names (`.exe`, `.dll`, `.ini`, `.cfg` that name the software), recent timestamps, config file content that reveals the source
    - A `.exe` or `.dll` with a recognizable name → software is likely still installed → check PM
-   - Only old `.log` files or empty subdirs → likely stale → `delete` or `remind`
+   - Only old `.log` files or empty subdirs → likely stale; known unindexed items tend toward `recommend-delete`, unclear ones toward `unknown`
 
 2. **Check own knowledge** — many folder names are well-known software:
    - Game studios: `FromSoftware`, `CD Projekt Red`, `Larian Studios`, `Bethesda`, etc.
@@ -152,12 +158,11 @@ For items not classified as keep/delete in Step 3 (including uncertain match res
    - Chinese: `"dirname" 是什么软件的文件夹`
    - Chinese software: `"dirname" 软件 目录 AppData`
    - Game: `"dirname" game save folder PC`
-   - If web search identifies the source → classify per rules #4–#8
+   - If web search identifies the source → classify per rules #4–#9
    - If nothing found AND own knowledge insufficient:
-     - stale item (`*`) → `remind`
-     - non-stale item → `unknown`
+     - source still unclear, stale or not → `unknown`
 
-**Minimize `unknown`.** Most folder names identify their software. `unknown` is only for items truly untraceable after all tools exhausted.
+**Minimize `unknown`, but do not force unclear items into deletion buckets.** `unknown` is only for items whose source or ownership remains unclear after all tools are exhausted.
 
 ```bash
 uv run python -m src deep "name1" "name2" "name3"
@@ -199,8 +204,9 @@ counting, and section ordering. The model only needs to get the pipe-delimited i
 
 **Batch strategy:**
 - Start with obvious items: system dirs (rule #1), user data (rule #2), cache/temp (rule #4)
-- Then software items (rules #5–#7) using match results
-- Finally unknown items (rule #8) after web search
+- Then software items (rules #5–#8) using match results
+- Then `recommend-delete` items after second review
+- Finally unknown items (rule #9) after web search
 - Each batch can be one or many items — add frequently to avoid losing work
 
 **Item file format:**
@@ -265,9 +271,10 @@ Do NOT run if the user still has questions about any item.
 | Action | Meaning | Rule |
 |--------|---------|------|
 | delete | Uninstalled software residual, or pure cache/temp, or empty dir | #3, #4, #5 |
-| remind | Item is stale (`*`) — user should decide; also catch-all for uncertain stale items | #6 |
-| keep | System, user data, or active software | #1, #2, #7 |
-| unknown | Cannot identify source after full investigation | #8 |
+| recommend-delete | Known item not found in any index; second review required before presenting as deletion candidate | #6 |
+| remind | Known stale item; user should decide whether to keep or delete | #7 |
+| keep | System, user data, or indexed non-stale software | #1, #2, #8 |
+| unknown | Cannot identify source or ownership after full investigation | #9 |
 
 ## facts.md
 

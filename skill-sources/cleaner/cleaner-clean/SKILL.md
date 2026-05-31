@@ -9,7 +9,8 @@ description: Use when the user has confirmed cleanup after an audit in this Clea
 
 - You MUST confirm with user before deleting anything.
 - You MUST only operate under %USERPROFILE%.
-- You MUST offer remind items as optional deletions.
+- You MUST offer `remind` items as optional deletions.
+- You MUST treat `recommend-delete` items as deletion candidates that already passed a second review in `cleaner-audit`.
 
 ## When to Use
 
@@ -21,14 +22,14 @@ All commands run from `~/Project/cleaner`.
 
 ### Step 1: Read report
 
-Find all rows where Action = `delete` and `remind`.
+Find all rows where Action = `delete`, `recommend-delete`, and `remind`.
 
 ### Step 2: Confirm
 
 Bilingual confirmation prompt. This is the **batch confirmation** for the full deletion set before execution starts:
 
 ```
-以下项目标记为待清理 (delete):        Items marked for deletion:
+以下项目标记为待清理 (delete / recommend-delete):        Items marked for deletion:
 - item1                               - item1
 - item2                               - item2
 

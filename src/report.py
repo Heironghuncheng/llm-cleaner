@@ -16,6 +16,7 @@ from datetime import datetime
 from .config import scan_dir, load_config
 
 _DATA_DIR_NAME = "report-data"
+_SECTIONS = ("recommend-delete", "delete", "remind", "keep", "unknown")
 
 
 def data_dir() -> Path:
@@ -40,10 +41,11 @@ def _key_to_section_file(section: str, scan_key: str) -> str:
 def _section_file_to_key(filename: str) -> tuple[str, str] | None:
     """Parse 'section-scan_key.txt' back to (section, scan_key)."""
     stem = filename.replace(".txt", "")
-    parts = stem.split("-", 1)
-    if len(parts) != 2:
-        return None
-    return parts[0], parts[1].replace("_", "/")
+    for section in _SECTIONS:
+        prefix = f"{section}-"
+        if stem.startswith(prefix):
+            return section, stem[len(prefix):].replace("_", "/")
+    return None
 
 
 def _parse_item(line: str) -> dict | None:
@@ -131,10 +133,8 @@ def cmd_build(report_path: str | None = None):
     config = load_config()
     scan_keys = list(config.get("scan_dirs", {}).keys())
 
-    report: dict[str, dict[str, list[dict]]] = {
-        "delete": {}, "remind": {}, "keep": {}, "unknown": {}
-    }
-    totals: dict[str, int] = {"delete": 0, "remind": 0, "keep": 0, "unknown": 0}
+    report: dict[str, dict[str, list[dict]]] = {section: {} for section in _SECTIONS}
+    totals: dict[str, int] = {section: 0 for section in _SECTIONS}
 
     for f in sorted(d.iterdir()):
         if not f.suffix == ".txt":
@@ -164,12 +164,13 @@ def cmd_build(report_path: str | None = None):
     lines.append("## Summary")
     lines.append(
         f"- total: {total} | delete: {totals['delete']} | "
+        f"recommend-delete: {totals['recommend-delete']} | "
         f"remind: {totals['remind']} | keep: {totals['keep']} | "
         f"unknown: {totals['unknown']}"
     )
     lines.append("")
 
-    for section in ("delete", "remind", "keep", "unknown"):
+    for section in _SECTIONS:
         lines.append(f"## {section}")
         section_data = report.get(section, {})
         ordered_keys = [k for k in scan_keys if k in section_data]

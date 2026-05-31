@@ -46,6 +46,7 @@ Trigger: "配置" / "config" / "add scan dir" / "change depth" / "update facts"
 | `deep_scan_depth` | int | Default depth for `deep` command. Overridable with `--depth`. |
 | `stale_months` | int | Threshold for `*` stale marker. |
 | `manual_dirs` | [str] | Reference dirs (never cleaned). |
+| `steam_roots` | [str] | Optional Steam install/library roots used to build `steam-index`. Empty = auto-detect from registry when possible. |
 | `package_managers` | [str] | PMs to query. |
 
 Depth lookup: `scan_depths.get(key, scan_depths.get("default", 1))`
@@ -72,6 +73,12 @@ uv run python -m src scan <key>   # test one
 uv run python -m src scan          # test all
 ```
 
+Steam reference validation:
+
+```bash
+uv run python -m src scan steam-index
+```
+
 ### facts.md format
 
 ```yaml
@@ -89,7 +96,7 @@ stale:
 |---------|-----------------|
 | `active` | Hint toward `keep`; still verify against current scan results |
 | `no_clean` | User preference hint toward `keep`; still include the item in the report |
-| `stale` | Hint toward `remind` or deeper investigation; not an automatic `delete` |
+| `stale` | Hint toward `remind`, `recommend-delete`, or deeper investigation. Known but unindexed items tend toward `recommend-delete`; unclear ones end up as `unknown` |
 
 Rules: paths relative to `%USERPROFILE%`, `facts.md` is prompt memory rather than ground truth, entries still need to be represented in the audit report, CC asks before writing, remove entries when situation changes.
 
