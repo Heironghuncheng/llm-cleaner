@@ -82,29 +82,29 @@ uv run python -m src scan steam-index
 ### facts.md format
 
 ```yaml
-active:
+must_keep:
   - path: .codex/
     reason: scoop codex installed
-no_clean:
-  - .ssh
-stale:
+must_delete:
   - path: AppData/Local/BleachBit
-    reason: uninstalled 2025-10
+    reason: confirmed leftover
+must_remind:
+  - .ssh
 ```
 
 | Section | Effect on audit |
 |---------|-----------------|
-| `active` | Hint toward `keep`; still verify against current scan results |
-| `no_clean` | User preference hint toward `keep`; still include the item in the report |
-| `stale` | Hint toward `remind`, `recommend-delete`, or deeper investigation. Known but unindexed items tend toward `recommend-delete`; unclear ones end up as `unknown` |
+| `must_keep` | Hard constraint: the item must appear in `keep` |
+| `must_delete` | Hard constraint: the item must appear in `delete` |
+| `must_remind` | Hard constraint: the item must appear in `remind` |
 
-Rules: paths relative to `%USERPROFILE%`, `facts.md` is prompt memory rather than ground truth, entries still need to be represented in the audit report, CC asks before writing, remove entries when situation changes.
+Rules: paths relative to `%USERPROFILE%`, `facts.md` is a hard-constraint file rather than prompt memory, entries must be represented in the audit report, CC asks before writing, remove entries when situation changes.
 
 ## Quick Reference
 
 | Action | Trigger |
 |--------|---------|
-| Add to `active` | User says "this is active" |
-| Add to `no_clean` | User says "never clean this" |
-| Add to `stale` | User confirms something is stale |
+| Add to `must_keep` | User says "this must stay" |
+| Add to `must_delete` | User says "this must be deleted" |
+| Add to `must_remind` | User says "always remind me about this" |
 | Remove entry | Situation changed |

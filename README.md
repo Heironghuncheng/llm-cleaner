@@ -53,6 +53,9 @@ Cleaner-specific skill sources are grouped under `skill-sources/cleaner/`.
 这些 skill 文件由 AI 辅助起草，并在发布到仓库前经过人工审核与验证。  
 These skill files were drafted with AI assistance, then manually reviewed and verified before being published in this repository.
 
+`facts.md` 现在用于存放硬约束，只保留三类：`must_keep`、`must_delete`、`must_remind`。  
+`facts.md` now stores hard constraints only, with three categories: `must_keep`, `must_delete`, and `must_remind`.
+
 - `cleaner-audit`
 - `cleaner-clean`
 - `cleaner-config`

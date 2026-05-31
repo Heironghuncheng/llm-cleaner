@@ -69,8 +69,8 @@ Each report row's Evidence must follow one of these patterns:
 - You MUST web search unknown items — try every tool before giving up.
 - You MUST present results bilingually (中/英).
 - You MUST do a second review for `recommend-delete` items before presenting them as deletion candidates. User-defined directory names may not match software names, and some installed software may live outside configured reference dirs.
-- `facts.md` is prompt memory, not ground truth. Use it as a hint when classifying, but still verify against scan output and still account for every item in the report.
-- `facts.md` `no_clean` entries usually classify as `keep` unless the user explicitly overrides them. `stale` entries are investigation/reminder hints, not automatic `delete`.
+- `facts.md` is a hard-constraint file, not soft memory. `must_keep`, `must_delete`, and `must_remind` must be respected in the final report.
+- `facts.md` entries still need to be represented in the report; they are not skipped or hidden.
 - **Recent dates ≠ keep.** A file modified last week is still residual if it is not found in any index. Recent-but-unindexed known items still belong in `recommend-delete`.
 - **Known but unindexed items go to `recommend-delete`.** If you know what created the item, but it is not found in `packages`, `manual-index`, or `steam-index`, put it in `recommend-delete` and second-review it.
 - **User data must be user-created.** Software workspaces (Go, Rust, Node) are NOT user data — they're software artifacts. If the software is gone, the workspace is residual. If the user doesn't recognize the file, it's not user data → `unknown`.
@@ -278,4 +278,4 @@ Do NOT run if the user still has questions about any item.
 
 ## facts.md
 
-Read for context before classification. It is a user-maintained hint file, not an authority that replaces scan/deep/match/verify. Only write when user explicitly requests. See `cleaner-config` for format.
+Read before classification. It is a user-maintained hard-constraint file that can force specific items into `keep`, `delete`, or `remind`. Only write when user explicitly requests. See `cleaner-config` for format.

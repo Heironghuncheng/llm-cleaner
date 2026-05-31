@@ -11,7 +11,7 @@ Guide the user through Cleaner onboarding step by step. This skill handles the f
 
 - User says `首次使用` / `第一次用` / `初始化` / `setup` / `first use`
 - User wants help configuring `config.json` before the first real scan
-- User wants to seed `facts.md` carefully instead of running an audit immediately
+- User wants to define hard `facts.md` constraints before running an audit
 
 Do not use for:
 - Routine config edits after onboarding; use `cleaner-config`
@@ -25,7 +25,7 @@ Do not use for:
 Before asking configuration questions, state these guardrails:
 - Cleaner only scans under `%USERPROFILE%`
 - `C:\no_super` and `D:\game` are reference indexes only and are never cleaned
-- `facts.md` is prompt memory, not ground truth
+- `facts.md` stores hard constraints, not soft hints
 - The first-use goal is safe defaults plus a successful first scan
 
 ### 2. Review current defaults
@@ -50,11 +50,11 @@ Recommended order:
 3. Keep the current `package_managers` list?
 4. Change `stale_months`?
 5. Change `deep_scan_depth`? Explain that `-1` means unlimited deep scan.
-6. Add any explicit `facts.md` hints, such as `no_clean` entries?
+6. Add any explicit `facts.md` constraints, such as `must_keep`, `must_delete`, or `must_remind` entries?
 
 Rules:
 - Do not dump the whole questionnaire in one message
-- Do not write `facts.md` unless the user gives explicit items
+- Do not write `facts.md` unless the user gives explicit constraint items
 - Do not propose scan roots outside the project scope without a clear user request
 - If the user is unsure, keep the current default
 
@@ -63,7 +63,7 @@ Rules:
 When the user has answered enough to act:
 - Use `cleaner-config` for actual edits
 - Group related `config.json` changes together
-- Keep `facts.md` entries minimal and user-provided
+- Keep `facts.md` entries minimal, explicit, and user-provided
 - Prefer the current project defaults unless the user clearly wants a change
 
 ### 5. Validate before handoff

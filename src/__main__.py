@@ -2,7 +2,7 @@ import sys
 import re
 from pathlib import Path
 
-from .config import load_config, scan_dir, partial_dir
+from .config import load_config, load_facts, scan_dir, partial_dir
 from .scanner import run_full_scan, run_partial_scan, deep_scan, _key_to_filename
 from .packages import query_all, scan_manual_index, scan_steam_index
 from .matcher import match_entry
@@ -237,6 +237,27 @@ def _extract_diff_items(diff_path: Path, file_to_key: dict) -> dict[str, list[st
     return items
 
 
+def _facts_constraints() -> tuple[set[str], set[str], set[str]]:
+    facts = load_facts()
+
+    def _names(entries) -> set[str]:
+        names = set()
+        for entry in entries:
+            if isinstance(entry, str):
+                names.add(entry.strip())
+            elif isinstance(entry, dict):
+                path = str(entry.get("path", "")).strip()
+                if path:
+                    names.add(Path(path).name)
+        return {name for name in names if name}
+
+    return (
+        _names(facts.get("must_keep", [])),
+        _names(facts.get("must_delete", [])),
+        _names(facts.get("must_remind", [])),
+    )
+
+
 def cmd_verify(report_path):
     """Verify report items against scan/diff files."""
     from datetime import datetime
@@ -290,8 +311,16 @@ def cmd_verify(report_path):
     report_text = rp.read_text(encoding="utf-8")
     report_items: dict[str, list[str]] = {}
     report_counts: dict[str, int] = {}
+    report_sections: dict[str, set[str]] = {
+        "delete": set(),
+        "recommend-delete": set(),
+        "remind": set(),
+        "keep": set(),
+        "unknown": set(),
+    }
     current_dir = None
     in_classification = False
+    current_section = None
 
     for line in report_text.splitlines():
         if (
@@ -302,9 +331,11 @@ def cmd_verify(report_path):
             or line.startswith("## remind")
         ):
             in_classification = True
+            current_section = line[3:].strip()
         elif line.startswith("## "):
             in_classification = False
             current_dir = None
+            current_section = None
         elif line.startswith("### ") and in_classification:
             dir_name = line[4:].strip()
             if "(" in dir_name:
@@ -318,6 +349,8 @@ def cmd_verify(report_path):
                 count = int(batch_match.group(1)) if batch_match else 1
                 report_counts[current_dir] = report_counts.get(current_dir, 0) + count
                 report_items.setdefault(current_dir, []).append(name)
+                if current_section in report_sections:
+                    report_sections[current_section].add(name)
 
     # Detect mode
     diff_exists = (sd / "diff.txt").exists()
@@ -355,8 +388,32 @@ def cmd_verify(report_path):
 
     if not mismatches:
         total = sum(report_counts.values())
-        print(f"OK — {total} items verified ({'diff' if is_diff else 'full'} mode)")
-        return
+        must_keep, must_delete, must_remind = _facts_constraints()
+        facts_errors = []
+
+        for name in sorted(must_keep):
+            if name not in report_sections["keep"]:
+                facts_errors.append(f"must_keep not in keep: {name}")
+        for name in sorted(must_delete):
+            if name not in report_sections["delete"]:
+                facts_errors.append(f"must_delete not in delete: {name}")
+        for name in sorted(must_remind):
+            if name not in report_sections["remind"]:
+                facts_errors.append(f"must_remind not in remind: {name}")
+
+        if not facts_errors:
+            print(f"OK — {total} items verified ({'diff' if is_diff else 'full'} mode)")
+            return
+
+        print(f"FAIL — facts constraint mismatch(es) ({len(facts_errors)})")
+        ts = datetime.now().strftime("%Y-%m-%d")
+        mismatch_path = sd / f"verify-{ts}.txt"
+        lines = [f"# Facts constraint mismatch — {ts}\n"]
+        for item in facts_errors:
+            lines.append(f"- {item}")
+        mismatch_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"Mismatch report: {mismatch_path}")
+        sys.exit(1)
 
     # Print summary
     print(f"FAIL — {len(mismatches)} directory mismatch(es) ({'diff' if is_diff else 'full'} mode)")
