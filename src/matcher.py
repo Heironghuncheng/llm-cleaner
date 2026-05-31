@@ -70,9 +70,9 @@ def match_entry(name: str, packages: dict[str, list[str]], manual_index: list[st
     result["home"] = fuzzy_match(name, home)
     result["appdata"] = fuzzy_match(name, appdata_entries)
 
-    # Filter out self-matches from scan file results
-    result["home"] = [(m, s) for m, s in result["home"] if m != name]
-    result["appdata"] = [(m, s) for m, s in result["appdata"] if m != name]
+    # Keep exact directory-name matches. The caller is explicitly asking whether
+    # this name appears in scanned locations, so removing identical matches hides
+    # the strongest signal and causes obvious false negatives.
 
     # Determine verdict
     has_pkg = result["packages"] and result["packages"][0][1] >= 80
