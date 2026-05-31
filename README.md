@@ -2,6 +2,8 @@
 
 Windows-first tooling for auditing leftover software files under `%USERPROFILE%`, plus a small set of Cleaner-specific agent skills.
 
+This repository is prepared specifically for Windows and PowerShell workflows. Linux and macOS are not primary targets.
+
 ## Scope
 
 - Scan target: `%USERPROFILE%`
