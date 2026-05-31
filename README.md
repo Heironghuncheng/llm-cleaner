@@ -34,6 +34,8 @@ The reset script removes generated scan/report artifacts, deletes local agent in
 
 Cleaner-specific skill sources are grouped under `skill-sources/cleaner/`:
 
+These skill files were drafted with AI assistance, then manually reviewed and verified before being published in this repository.
+
 - `cleaner-audit`
 - `cleaner-clean`
 - `cleaner-config`
