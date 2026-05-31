@@ -3,6 +3,7 @@
 Windows-first tooling for auditing leftover software files under `%USERPROFILE%`, plus a small set of Cleaner-specific agent skills.
 
 This repository is prepared specifically for Windows and PowerShell workflows. Linux and macOS are not primary targets.
+Its primary development purpose is to inspect and clean leftover software files inside the user's home directory.
 
 ## Scope
 
