@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "skills": {
+    "apply-anthropic-skill-best-practices": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/customaize-agent/skills/apply-anthropic-skill-best-practices/SKILL.md",
+      "computedHash": "f1feadad0f33afd452b2824b5d6fa12d0af34e525a2da6e8042f47d7e8772871"
+    },
+    "context-engineering": {
+      "source": "addyosmani/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/context-engineering/SKILL.md",
+      "computedHash": "1296ce5de6ca27323e8ad6dba640744770bc868c8cf49d0934b484c553c80243"
+    },
+    "create-skill": {
+      "source": "siviter-xyz/dot-agent",
+      "sourceType": "github",
+      "skillPath": "skills/create-skill/SKILL.md",
+      "computedHash": "bf243df18661e667efc259681398709f2cea8672ba4ffada02e144b5e3fb0ec0"
+    },
+    "dispatching-parallel-agents": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/dispatching-parallel-agents/SKILL.md",
+      "computedHash": "e21044ae7496fc285f1df9ff3fb518a3a20bea6f5216c1f59f4987e12c769a0a"
+    },
+    "do-in-steps": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/sadd/skills/do-in-steps/SKILL.md",
+      "computedHash": "980cfcb0ec1a8a0d57bc3f6dd62311b34830bacabe97a3385168a9f3af1c1d3d"
+    },
+    "multi-agent-patterns": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/sadd/skills/multi-agent-patterns/SKILL.md",
+      "computedHash": "40a17100f0a1edcc64bfd9fe53ad8a846d0241c628cba0dd7bd345a9925bc04c"
+    },
+    "plan-do-check-act": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/kaizen/skills/plan-do-check-act/SKILL.md",
+      "computedHash": "bf5bb8c3a554f123d2282617739369032437fa981c733c2d231ca298852be95e"
+    },
+    "review-local-changes": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/review/skills/review-local-changes/SKILL.md",
+      "computedHash": "935a5d91c121862f8a66829dba90f06c37ecad284f1d6f5dfe98dd4b6d273e69"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/systematic-debugging/SKILL.md",
+      "computedHash": "7246fdd3a795fc3daff0af72044ca99bf836e4e6a46844742858786fdfb86488"
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/verification-before-completion/SKILL.md",
+      "computedHash": "9b446f0c7fe1cfb560b1d34439523b1a76d5f177290007b2c053a1c749a4a8ba"
+    },
+    "write-concisely": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/docs/skills/write-concisely/SKILL.md",
+      "computedHash": "6652403d64979380d4681659598a2e3998b5b2a4cc62a23b0f10ef0b196ada52"
+    },
+    "write-tests": {
+      "source": "neolabhq/context-engineering-kit",
+      "sourceType": "github",
+      "skillPath": "plugins/tdd/skills/write-tests/SKILL.md",
+      "computedHash": "8b7fad5e8b0a0a0b4075e7e04f8269150068dd425caf5bd02697fb3dd20fee10"
+    },
+    "writing-skills": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "skillPath": "skills/writing-skills/SKILL.md",
+      "computedHash": "b0e3065034610df41b9119445b5fd052042752bb3e598ca66aea2403a7c7685e"
+    }
+  }
+}

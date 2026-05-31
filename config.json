@@ -1,0 +1,16 @@
+{
+  "manual_dirs": ["C:\\no_super", "D:\\game"],
+  "stale_months": 1,
+  "deep_scan_depth": -1,
+  "package_managers": ["scoop", "winget", "choco", "mise", "uv_tool"],
+  "scan_dirs": {
+    "home": "",
+    "appdata/root": "AppData",
+    "appdata/roaming": "AppData/Roaming",
+    "appdata/local": "AppData/Local",
+    "appdata/locallow": "AppData/LocalLow"
+  },
+  "scan_depths": {
+    "default": 1
+  }
+}
